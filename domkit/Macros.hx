@@ -321,7 +321,7 @@ class Macros {
 				var baseCheck = { expr : ECheckType(macro this,ct), pos : Context.currentPos() };
 				var initAttr = attributes.expr.match(EConst(CIdent("null"))) ? macro null : macro tmp.initAttributes($attributes);
 				[
-					(macro var tmp : domkit.Properties<$componentsType> = this.dom),
+					(macro @:pos(pos) var tmp : domkit.Properties<$componentsType> = this.dom),
 					macro @:pos(pos) if( tmp == null ) {
 						tmp = domkit.Properties.create($v{name},($baseCheck:$componentsType), $attributes);
 						this.dom = tmp;
@@ -332,7 +332,7 @@ class Macros {
 				];
 			} else {
 				var newExpr = macro @:pos(pos) domkit.Properties.createNew($v{name},tmp, [$a{eargs}], $attributes);
-				[macro var tmp = @:privateAccess $newExpr];
+				[macro @:pos(pos) var tmp = @:privateAccess $newExpr];
 			}
 			if( isContent ) {
 				exprs.push(macro __contentRoot = tmp);
@@ -358,9 +358,9 @@ class Macros {
 						default:
 						}
 						if (data.useThis) {
-							exprs.push(macro this.$field.push(cast tmp.obj));
+							exprs.push(macro @:pos(pos) this.$field.push(cast tmp.obj));
 						} else {
-							exprs.push(macro $i{field}.push(cast tmp.obj));
+							exprs.push(macro @:pos(pos) $i{field}.push(cast tmp.obj));
 						}
 
 						if( !data.declaredIds.exists(field) ) {
@@ -372,16 +372,16 @@ class Macros {
 								kind : FVar(TPath({ pack : [], name : "Array", params : [TPType(ct)] }), null),
 							});
 							if (data.useThis) {
-								data.inits.push(macro this.$field = []);
+								data.inits.push(macro @:pos(pos) this.$field = []);
 							} else {
-								data.inits.push(macro $i{field} = []);
+								data.inits.push(macro @:pos(pos) $i{field} = []);
 							}
 						}
 					} else {
 						if (data.useThis) {
-							exprs.push(macro this.$field = cast tmp.obj);
+							exprs.push(macro @:pos(pos) this.$field = cast tmp.obj);
 						} else {
-							exprs.push(macro $i{field} = cast tmp.obj);
+							exprs.push(macro @:pos(pos) $i{field} = cast tmp.obj);
 						}
 						data.fields.push({
 							name : field,
@@ -390,16 +390,17 @@ class Macros {
 							kind : FVar(ct),
 						});
 						if (data.useThis) {
-							data.inits.push(macro this.$field = null);
+							data.inits.push(macro @:pos(pos) this.$field = null);
 						} else {
-							data.inits.push(macro $i{field} = null);
+							data.inits.push(macro @:pos(pos) $i{field} = null);
 						}
 					}
 				}
 			for( e in aexprs )
 				exprs.push(e);
 			for( c in m.children ) {
-				var e = buildComponentsInit(c, data, pos);
+				var cpos = makePos(pos, c.pmin, c.pmax);
+				var e = buildComponentsInit(c, data, cpos);
 				if( e != null ) exprs.push(e);
 			}
 			if( isRoot && data.hasContent ) {
